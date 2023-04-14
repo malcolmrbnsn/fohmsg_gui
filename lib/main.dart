@@ -38,8 +38,8 @@ class MyApp extends StatelessWidget {
         initialRoute: '/',
         routes: {
           // When navigating to the "/" route, build the FirstScreen widget.
-          '/': (context) => const MyHomePage(title: 'Connect to Server'),
-          '/second': (context) => const SecondScreen(),
+          '/': (context) => const MyHomePage(),
+          '/app': (context) => const ChatScreen(),
         },
         // home: const MyHomePage(title: 'Connect to Server'),
       ),
@@ -48,9 +48,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  final String title;
+  const MyHomePage({Key? key}) : super(key: key);
 
   @override
   MyHomePageState createState() => MyHomePageState();
@@ -68,7 +66,7 @@ class MyHomePageState extends State<MyHomePage> {
 
     // ignore: avoid_print
     print('Connecting to $serverUrl with username $username');
-    Navigator.pushNamed(context, '/second');
+    Navigator.pushNamed(context, '/app');
   }
 
   // @override
@@ -94,7 +92,7 @@ class MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: const Text('Connect to Server'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -123,8 +121,8 @@ class MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class SecondScreen extends StatelessWidget {
-  const SecondScreen({super.key});
+class ChatScreen extends StatelessWidget {
+  const ChatScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +134,7 @@ class SecondScreen extends StatelessWidget {
             // off the stack.
             Navigator.pop(context);
           },
-          child: const Text('Go back!'),
+          child: const Text('Back'),
         ),
       ),
     );
