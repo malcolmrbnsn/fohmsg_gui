@@ -38,8 +38,8 @@ class MyApp extends StatelessWidget {
         initialRoute: '/',
         routes: {
           // When navigating to the "/" route, build the FirstScreen widget.
-          '/': (context) => const MyHomePage(),
-          '/app': (context) => const ChatScreen(),
+          '/': (context) => const HomePage(),
+          '/app': (context) => const ChatPage(),
         },
         // home: const MyHomePage(title: 'Connect to Server'),
       ),
@@ -47,14 +47,14 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key}) : super(key: key);
+class HomePage extends StatefulWidget {
+  const HomePage({Key? key}) : super(key: key);
 
   @override
-  MyHomePageState createState() => MyHomePageState();
+  HomePageState createState() => HomePageState();
 }
 
-class MyHomePageState extends State<MyHomePage> {
+class HomePageState extends State<HomePage> {
   TextEditingController serverController = TextEditingController();
   TextEditingController usernameController = TextEditingController();
 
@@ -121,21 +121,79 @@ class MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class ChatScreen extends StatelessWidget {
-  const ChatScreen({super.key});
+class ChatPage extends StatelessWidget {
+  const ChatPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            // Navigate back to the first screen by popping the current route
-            // off the stack.
-            Navigator.pop(context);
-          },
-          child: const Text('Back'),
-        ),
+      body: Row(
+        children: [
+          Container(
+            width: 100.0,
+            height: double.infinity,
+            color: Colors.grey[200],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  child: const Text('Button 1'),
+                  onPressed: () {},
+                ),
+                ElevatedButton(
+                  child: const Text('Button 2'),
+                  onPressed: () {},
+                ),
+                ElevatedButton(
+                  child: const Text('Button 3'),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    children: const [
+                      ListTile(
+                        title: Text('Chat message 1'),
+                      ),
+                      ListTile(
+                        title: Text('Chat message 2'),
+                      ),
+                      ListTile(
+                        title: Text('Chat message 3'),
+                      ),
+                      // Add more chat messages here
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: TextField(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: 'Type a message',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8.0),
+                      ElevatedButton(
+                        child: const Text('Send'),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
