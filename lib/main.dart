@@ -1,54 +1,163 @@
+// ignore_for_file: avoid_print
+
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+// ignore: library_prefixes
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import './chat.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  // Must add this line.
-  await windowManager.ensureInitialized();
+  // Apply window size constraints if on desktop
+  if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+    WidgetsFlutterBinding.ensureInitialized();
+    await windowManager.ensureInitialized();
 
-  WindowOptions windowOptions = const WindowOptions(
-    size: Size(800, 300),
-    // center: true,
-    backgroundColor: Colors.transparent,
-    skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.hidden,
-    // alwaysOnTop: true, //THIS IS GREAT
-  );
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(800, 300),
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.hidden,
+      // alwaysOnTop: true, //THIS IS GREAT
+    );
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
+  // get this show on the road
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+// STATE:
+  late IO.Socket socket;
+  String serverURL = "";
+  String username = "";
+  bool connected = false;
+  late List<Object> messages;
+  late List<Object> users;
+
+// METHODS:
+
+// Sign in
+  void handleLoginSubmit(String addr, String usr) {
+    setState(() => {
+          username = usr,
+          serverURL = addr,
+        });
+    print(serverURL);
+    print(username);
+    setPrefs(); //not sure if this works
+    initSocket();
+  }
+
+// // Receive Message
+//   void handleMessageReceive() {}
+// // Send Message
+//   void handleMessageTransmit() {}
+// // Update Users
+//   void handleUpdateUsers() {}
+// // Send Effect
+//   void handleEffectSend() {}
+// // Recieve Effect
+//   void handleEffectReceive() {}
+
+  // SOCKETIO FUNCTS
+  void initSocket() {
+    // setup socket
+    socket = IO.io(serverURL, <String, dynamic>{
+      // 'autoConnect': true,
+      // 'setTransports': ['websocket'],
+    });
+    socket.onConnect((_) {
+      print('socket connected');
+    });
+    socket.onDisconnect((_) {
+      print('socket disconnected');
+    });
+    socket.onConnectError((dynamic err) {
+      print(err);
+    });
+    socket.onError((dynamic err) {
+      print(err);
+    });
+  }
+
+// PREFS
+  void pullPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    print(prefs.getString('serverURL'));
+    setState(() {
+      serverURL = prefs.getString('serverURL') ?? "";
+      username = prefs.getString('username') ?? "";
+    });
+  }
+
+  setPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString('serverURL', serverURL);
+    prefs.setString('username', username);
+    print(prefs.getString('serverURL'));
+  }
+
+// STOCK EFFECTS
+  @override
+  void initState() {
+    pullPrefs();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    socket.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MediaQuery(
-      data: MediaQueryData.fromWindow(WidgetsBinding.instance.window),
-      child: MaterialApp(
-        title: 'MyApp',
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          primarySwatch: Colors.blue,
-        ),
-        initialRoute: '/',
-        routes: {
-          // When navigating to the "/" route, build the FirstScreen widget.
-          '/': (context) => const HomePage(),
-          '/app': (context) => const ChatPage(),
-        },
-        // home: const MyHomePage(title: 'Connect to Server'),
+    return MaterialApp(
+      title: 'MyApp',
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.blue,
       ),
+      debugShowCheckedModeBanner: false,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => HomePage(
+              serverURL: serverURL,
+              username: username,
+              handleLoginSubmit: handleLoginSubmit,
+            ),
+        '/app': (context) => const ChatPage(),
+      },
+      // home: const MyHomePage(title: 'Connect to Server'),
     );
   }
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({
+    Key? key,
+    required this.serverURL,
+    required this.username,
+    required this.handleLoginSubmit,
+  }) : super(key: key);
+
+  final Function handleLoginSubmit;
+  final String serverURL;
+  final String username;
 
   @override
   HomePageState createState() => HomePageState();
@@ -59,25 +168,19 @@ class HomePageState extends State<HomePage> {
   TextEditingController usernameController = TextEditingController();
 
   void _connectToServer() {
-    String serverUrl = serverController.text;
-    String username = usernameController.text;
-
     // Implement your logic to connect to the server here
 
-    // ignore: avoid_print
-    print('Connecting to $serverUrl with username $username');
+    widget.handleLoginSubmit(serverController.text, usernameController.text);
+
     Navigator.pushNamed(context, '/app');
   }
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   serverController.text = _prefs.then((SharedPreferences prefs) {
-  //     return prefs.getString('server');
-  //   });
-  //   // serverController.text = server;
-  //   // usernameController.text = username;
-  // }
+  @override
+  void initState() {
+    serverController.text = widget.serverURL;
+    usernameController.text = widget.username;
+    super.initState;
+  }
 
   @override
   void dispose() {
@@ -102,6 +205,7 @@ class HomePageState extends State<HomePage> {
             TextFormField(
               controller: serverController,
               decoration: const InputDecoration(labelText: 'Server URL'),
+              autocorrect: false,
             ),
             const SizedBox(height: 16.0),
             TextFormField(
@@ -111,89 +215,12 @@ class HomePageState extends State<HomePage> {
             const SizedBox(height: 16.0),
             const Padding(padding: EdgeInsets.symmetric(vertical: 6.0)),
             ElevatedButton(
+              // onPressed: _connectToServer,
               onPressed: _connectToServer,
               child: const Text('Connect'),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class ChatPage extends StatelessWidget {
-  const ChatPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          Container(
-            width: 100.0,
-            height: double.infinity,
-            color: Colors.grey[200],
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  child: const Text('Button 1'),
-                  onPressed: () {},
-                ),
-                ElevatedButton(
-                  child: const Text('Button 2'),
-                  onPressed: () {},
-                ),
-                ElevatedButton(
-                  child: const Text('Button 3'),
-                  onPressed: () {},
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    children: const [
-                      ListTile(
-                        title: Text('Chat message 1'),
-                      ),
-                      ListTile(
-                        title: Text('Chat message 2'),
-                      ),
-                      ListTile(
-                        title: Text('Chat message 3'),
-                      ),
-                      // Add more chat messages here
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(),
-                            hintText: 'Type a message',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8.0),
-                      ElevatedButton(
-                        child: const Text('Send'),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
